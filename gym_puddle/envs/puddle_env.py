@@ -1,115 +1,170 @@
-import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
+import gymnasium
+from gymnasium import spaces
+from gymnasium.utils import seeding
 import numpy as np
 import copy
+import pygame
 
-class PuddleEnv(gym.Env):
-    metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, start=[0.2, 0.4], goal=[1.0, 1.0], goal_threshold=0.1,
-            noise=0.025, thrust=0.05, puddle_center=[[.3, .6], [.4, .5], [.8, .9]],
-            puddle_width=[[.1, .03], [.03, .1], [.03, .1]]):
+class PuddleEnv(gymnasium.Env):
+    metadata = {"render_modes": ["human", "rgb_array"]}
+
+    def __init__(
+        self,
+        start=[0.2, 0.4],
+        goal=[1.0, 1.0],
+        goal_threshold=0.1,
+        noise=0.025,
+        thrust=0.05,
+        puddle_center=[[0.3, 0.6], [0.4, 0.5], [0.8, 0.9]],
+        puddle_width=[[0.1, 0.03], [0.03, 0.1], [0.03, 0.1]],
+    ):
         self.start = np.array(start)
         self.goal = np.array(goal)
+
         self.goal_threshold = goal_threshold
+
         self.noise = noise
         self.thrust = thrust
+
         self.puddle_center = [np.array(center) for center in puddle_center]
         self.puddle_width = [np.array(width) for width in puddle_width]
 
         self.action_space = spaces.Discrete(5)
-        self.observation_space = spaces.Box(0.0, 1.0, shape=(2,))
+        self.observation_space = spaces.Box(0.0, 1.0, shape=(2,), dtype=np.float64)
 
         self.actions = [np.zeros(2) for i in range(5)]
+
         for i in range(4):
-            self.actions[i][i//2] = thrust * (i%2 * 2 - 1)
+            self.actions[i][i // 2] = thrust * (i % 2 * 2 - 1)
 
-        self._seed()
-        self.viewer = None
+        # Rendering
+        self.render_mode = "human"
+        self.window = None
+        self.clock = None
+        self.window_size = 400
+        self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
+        self.min_reward = self.find_min_reward()
+        self.heatmap = False
 
-    def _seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+    def step(self, action):
+        trunc = False  # TODO: handle that later
+        assert self.action_space.contains(action), "%r (%s) invalid" % (
+            action,
+            type(action),
+        )
 
-    def _step(self, action):
-        assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
-
-        self.pos += self.actions[action] + self.np_random.uniform(low=-self.noise, high=self.noise, size=(2,))
+        self.pos += self.actions[action] + self.np_random.uniform(
+            low=-self.noise, high=self.noise, size=(2,)
+        )
         self.pos = np.clip(self.pos, 0.0, 1.0)
 
         reward = self._get_reward(self.pos)
 
         done = np.linalg.norm((self.pos - self.goal), ord=1) < self.goal_threshold
 
-        return self.pos, reward, done, {}
+        return self.pos, reward, done, trunc, {}
 
     def _get_reward(self, pos):
-        reward = -1.
+        reward = float("inf")  # Initialize reward with a large positive value
         for cen, wid in zip(self.puddle_center, self.puddle_width):
-            reward -= 2. * self._gaussian1d(pos[0], cen[0], wid[0]) * \
-                self._gaussian1d(pos[1], cen[1], wid[1])
+            reward = min(
+                reward,
+                -(
+                    2.0
+                    * self._gaussian1d(pos[0], cen[0], wid[0])
+                    * self._gaussian1d(pos[1], cen[1], wid[1])
+                ),
+            )
 
         return reward
 
     def _gaussian1d(self, p, mu, sig):
-        return np.exp(-((p - mu)**2)/(2.*sig**2)) / (sig*np.sqrt(2.*np.pi))
+        return np.exp(-((p - mu) ** 2) / (2.0 * sig**2)) / (sig * np.sqrt(2.0 * np.pi))
 
-    def _reset(self):
+    def reset(self, seed=None, options=None):
+        self.np_random, seed = seeding.np_random(seed)
         if self.start is None:
             self.pos = self.observation_space.sample()
         else:
             self.pos = copy.copy(self.start)
-        return self.pos
+        return self.pos, {}
 
-    def _render(self, mode='human', close=False):
-        if close:
-            if self.viewer is not None:
-                self.viewer.close()
-                self.viewer = None
-            return
+    def render(self):
+        self.render_mode = "human"
+        return self._render_frame()
 
-        screen_width = 600
-        screen_height = 400
+    def _render_frame(self):
+        if self.window is None and self.render_mode == "human":
+            pygame.init()
+            pygame.display.init()
+            self.window = pygame.display.set_mode((self.window_size, self.window_size))
+        if self.clock is None and self.render_mode == "human":
+            self.clock = pygame.time.Clock()
 
-        if self.viewer is None:
-            from gym.envs.classic_control import rendering
-            from gym_puddle.shapes.image import Image
-            self.viewer = rendering.Viewer(screen_width, screen_height)
+        canvas = pygame.Surface((self.window_size, self.window_size))
+        canvas.fill((255, 255, 255))
 
-            import pyglet
-            img_width = 100
-            img_height = 100
-            fformat = 'RGB'
-            pixels = np.zeros((img_width, img_height, len(fformat)))
-            for i in range(img_width):
-                for j in range(img_height):
-                    x = float(i)/img_width
-                    y = float(j)/img_height
-                    pixels[j,i,:] = self._get_reward(np.array([x,y]))
+        # Draw the goal, note that pygame coordination starts from top left but I want the center to be at down left
+        goal_pos = (
+            int(self.goal[0] * self.window_size) - 10,
+            self.window_size - int(self.goal[1] * self.window_size) + 10,
+        )
+        pygame.draw.circle(canvas, (0, 255, 0), goal_pos, 10)
 
-            pixels -= pixels.min()
-            pixels *= 255./pixels.max()
-            pixels = np.floor(pixels)
 
-            img = pyglet.image.create(img_width, img_height)
-            img.format = fformat
-            data=[chr(int(pixel)) for pixel in pixels.flatten()]
 
-            img.set_data(fformat, img_width * len(fformat), ''.join(data))
-            bg_image = Image(img, screen_width, screen_height)
-            bg_image.set_color(1.0,1.0,1.0)
+        # Draw the agent, note that pygame coordination starts from top left but I want the center to be at down left
+        agent_pos = (
+            int(self.pos[0] * self.window_size),
+            self.window_size - int(self.pos[1] * self.window_size),
+        )
+        pygame.draw.circle(canvas, (255, 0, 0), agent_pos, 5)
 
-            self.viewer.add_geom(bg_image)
+       
+        if self.heatmap:
+             # color the window as a heatmap based on the value of the reward at each pixel
+            for i in range(self.window_size):
+                for j in range(self.window_size):
+                    pos = np.array([i / self.window_size, 1 - j / self.window_size])
+                    reward = self._get_reward(pos)
+                    if reward < -1:
+                        max_reward = -1
+                        color = int(
+                            255
+                            * (reward - self.min_reward)
+                            / (max_reward - self.min_reward)
+                        )
+                        pygame.draw.rect(canvas, (255, color, 0), (i, j, 1, 1))
+        # Draw the puddle, note that pygame coordination starts from top left but I want the center to be at down left
+        for cen, wid in zip(self.puddle_center, self.puddle_width):
+            puddle_pos = (
+                int(cen[0] * self.window_size),
+                self.window_size - int(cen[1] * self.window_size),
+            )
+            puddle_size = (int(wid[0] * self.window_size), int(wid[1] * self.window_size))
+            pygame.draw.ellipse(canvas, (0, 0, 0), (puddle_pos, puddle_size))
 
-            thickness = 5
-            agent_polygon = rendering.FilledPolygon([(-thickness,-thickness),
-             (-thickness,thickness), (thickness,thickness), (thickness,-thickness)])
-            agent_polygon.set_color(0.0,1.0,0.0)
-            self.agenttrans = rendering.Transform()
-            agent_polygon.add_attr(self.agenttrans)
-            self.viewer.add_geom(agent_polygon)
+        if self.render_mode == "human":
+            self.window.blit(canvas, canvas.get_rect())
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        else: # rgb_array
+            return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))
 
-        self.agenttrans.set_translation(self.pos[0]*screen_width, self.pos[1]*screen_height)
+    def close(self):
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
 
-        return self.viewer.render(return_rgb_array = mode=='rgb_array')
+    def find_min_reward(self):
+        min_reward = float("inf")
+        for i in range(100):
+            for j in range(100):
+                pos = np.array([i / 100, j / 100])
+                reward = self._get_reward(pos)
+                if reward < min_reward:
+                    min_reward = reward
+
+        return min_reward
