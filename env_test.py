@@ -94,17 +94,18 @@ def print_info(env):
 
 
 if __name__ == "__main__":
-    with open("env_setup.json") as f:
+    json_file = f"gym_puddle/env_setups/agent_middle.json"
+    with open(json_file) as f:
         env_setup = json.load(f)
     env = gymnasium.make(
         "PuddleWorld-v0",
-        # start=env_setup["start"],
-        # goal=env_setup["goal"],
-        # goal_threshold=env_setup["goal_threshold"],
-        # noise=env_setup["noise"],
-        # thrust=env_setup["thrust"],
-        # puddle_center=env_setup["puddle_center"],
-        # puddle_width=env_setup["puddle_width"],
+        start=env_setup["start"],
+        goal=env_setup["goal"],
+        goal_threshold=env_setup["goal_threshold"],
+        noise=env_setup["noise"],
+        thrust=env_setup["thrust"],
+        puddle_center=env_setup["puddle_center"],
+        puddle_width=env_setup["puddle_width"],
     )
     print_info(env)
     # frames = train_by_DQN(env)
