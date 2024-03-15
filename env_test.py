@@ -12,25 +12,31 @@ import json
 
 def play_by_human(env):
     # #play by user
+    total_reward = 0
+    frames = []
     obs, info = env.reset()
     print(obs, info)
     while True:
         action = int(input("enter action: "))
         obs, reward, done, trunc, info = env.step(action)
+        total_reward += reward
         print("obs", obs)
         print("reward", reward)
         print("done", done)
         print("info", info)
-        env.render()
+        frames.append(env.render())
         time.sleep(0.1)
         if done:
             print("you did it!")
+            print("total reward:", total_reward)
             break
+    env.close()
+    return frames
 
 
 def train_by_DQN(env):
-    dqn_model = DQN(DQNPolicy, env, verbose=1)
-    dqn_model.learn(total_timesteps=int(5e4))
+    dqn_model = DQN(DQNPolicy, env, verbose=1, exploration_final_eps=0.01, exploration_initial_eps=0.3, exploration_fraction=0.9, buffer_size=int(1e3))
+    dqn_model.learn(total_timesteps=int(1e6))
     dqn_model.save("dqn_model")
     dqn_model = DQN.load("dqn_model")
 
@@ -46,7 +52,7 @@ def train_by_DQN(env):
         print("done", done)
         print("info", info)
         frames.append(
-            env.render(mode="rgb_array")
+            env.render()
         )  # Append the rendered frame to the list
         print(frames[-1].shape)
 
@@ -94,7 +100,7 @@ def print_info(env):
 
 
 if __name__ == "__main__":
-    json_file = f"gym_puddle/env_setups/agent_middle.json"
+    json_file = f"gym_puddle/env_setups/paper_compatible.json"
     with open(json_file) as f:
         env_setup = json.load(f)
     env = gymnasium.make(
@@ -108,11 +114,11 @@ if __name__ == "__main__":
         puddle_width=env_setup["puddle_width"],
     )
     print_info(env)
-    # frames = train_by_DQN(env)
-    # visualize(frames)
+    frames = train_by_DQN(env)
+    visualize(frames)
     print(env.unwrapped.find_min_reward())
-    env.reset()
-    env.render()
-    time.sleep(5)
+    # env.reset()
+    # env.render()
+    # time.sleep(5)
     # frames = play_by_human(env)
     # visualize(frames)
