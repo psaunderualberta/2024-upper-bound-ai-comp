@@ -81,7 +81,7 @@ def print_info(env):
     print("env.goal_threshold:", env.get_wrapper_attr("goal_threshold"))
     print("env.noise:", env.get_wrapper_attr("noise"))
     print("env.thrust:", env.get_wrapper_attr("thrust"))
-    print("env.puddle_center:", env.get_wrapper_attr("puddle_center"))
+    print("env.puddle_center:", env.get_wrapper_attr("puddle_top_left"))
     print("env.puddle_width:", env.get_wrapper_attr("puddle_width"))
     print("env.action_space:", env.get_wrapper_attr("action_space"))
     print("env.observation_space:", env.get_wrapper_attr("observation_space"))
@@ -105,13 +105,13 @@ if __name__ == "__main__":
         env_setup = json.load(f)
     env = gymnasium.make(
         "PuddleWorld-v0",
-        start=env_setup["start"],
-        goal=env_setup["goal"],
-        goal_threshold=env_setup["goal_threshold"],
-        noise=env_setup["noise"],
-        thrust=env_setup["thrust"],
-        puddle_center=env_setup["puddle_center"],
-        puddle_width=env_setup["puddle_width"],
+        # start=env_setup["start"],
+        # goal=env_setup["goal"],
+        # goal_threshold=env_setup["goal_threshold"],
+        # noise=env_setup["noise"],
+        # thrust=env_setup["thrust"],
+        # puddle_top_left=env_setup["puddle_center"],
+        # puddle_width=env_setup["puddle_width"],
     )
     print_info(env)
     frames = train_by_DQN(env)
