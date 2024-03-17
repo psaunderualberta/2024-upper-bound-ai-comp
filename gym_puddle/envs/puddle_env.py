@@ -149,7 +149,7 @@ class PuddleEnv(gymnasium.Env):
             self.pos = copy.copy(self.start)
         return self.pos, {}
 
-    def render(self) -> np.ndarray or None:
+    def render(self) -> np.ndarray or None:  # type: ignore
         """
         Render the environment.
 
@@ -190,25 +190,20 @@ class PuddleEnv(gymnasium.Env):
                         )
                         pygame.draw.rect(canvas, (255, color, 0), (i, j, 1, 1))
 
-        # Draw the goal, note that pygame coordination starts from top left but I want the center to be at down left
+        # Draw the goal
         goal_pos = (
             int(self.goal[0] * self.window_size) - 10,
             self.window_size - int(self.goal[1] * self.window_size) + 10,
         )
         pygame.draw.circle(canvas, (0, 255, 0), goal_pos, 10)
 
-        # Draw the agent, note that pygame coordination starts from top left but I want the center to be at down left
-        agent_pos = (
-            int(self.pos[0] * self.window_size),
-            self.window_size - int(self.pos[1] * self.window_size),
-        )
-        pygame.draw.circle(canvas, (255, 0, 0), agent_pos, 5)
+       
 
-        # Draw the puddle, note that pygame coordination starts from top left but I want the center to be at down left
-        for cen, wid in zip(self.puddle_top_left, self.puddle_width):
+        # Draw the puddles
+        for top_left, wid in zip(self.puddle_top_left, self.puddle_width):
             puddle_pos = (
-                int(cen[0] * self.window_size),
-                self.window_size - int(cen[1] * self.window_size),
+                int(top_left[0] * self.window_size),
+                self.window_size - int(top_left[1] * self.window_size),
             )
             puddle_size = (
                 int(wid[0] * self.window_size),
@@ -216,11 +211,19 @@ class PuddleEnv(gymnasium.Env):
             )
             pygame.draw.ellipse(canvas, (0, 0, 0), (puddle_pos, puddle_size))
 
+        # Draw the agent
+        agent_pos = (
+            int(self.pos[0] * self.window_size),
+            self.window_size - int(self.pos[1] * self.window_size),
+        )
+        pygame.draw.circle(canvas, (255, 0, 0), agent_pos, 5)
+
         if self.render_mode == "human":
             self.window.blit(canvas, canvas.get_rect())
             pygame.event.pump()
             pygame.display.update()
             self.clock.tick(self.metadata["render_fps"])
+
         else:  # rgb_array
             return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))
         return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))

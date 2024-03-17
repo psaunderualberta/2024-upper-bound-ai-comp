@@ -2,13 +2,13 @@
 Puddle world environment for OpenAI Gym with continuous state space and discrete action space.
 
 <kbd>
-  <img src='screenshot.png'/>
+  <img src='puddle_world.png'/>
 </kbd>
 
 ## Installation
 Run this line in the project directory.
 
-`pip3 install -e .`
+`pip install -e .`
 
 ## Usage
 ```python
@@ -19,7 +19,7 @@ env = gym.make('PuddleWorld-v0')
 ```
 
 ##  Notes
-Rendering is available. The program runs much faster without it, but it's good for debugging.
+Rendering is available.
 
 Run this line after each time step to see the puddles and agent location.
 ```python
