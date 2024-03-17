@@ -72,10 +72,11 @@ class PuddleEnv(gymnasium.Env):
         """
         # if number of steps taken is more than 1e5, then trunc is set to True
         self.num_steps += 1
-        if self.num_steps > 1e5:
-            trunc = True
-        else:
-            trunc = False  
+        # if self.num_steps > 1e5:
+        #     trunc = True
+        # else:
+        #     trunc = False  
+        trunc = False
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
             type(action),
@@ -139,6 +140,7 @@ class PuddleEnv(gymnasium.Env):
             tuple[np.ndarray, dict]: Tuple containing the initial position and additional information.
         """
         self.np_random, seed = seeding.np_random(seed)
+        self.num_steps = 0
         if self.start is None:
             self.pos = self.observation_space.sample()
             while (

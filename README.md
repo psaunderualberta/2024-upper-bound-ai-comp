@@ -12,7 +12,7 @@ Run this line in the project directory.
 
 ## Usage
 ```python
-import gym
+import gymnasium as gym
 import gym_puddle # Don't forget this extra line!
 
 env = gym.make('PuddleWorld-v0')
