@@ -12,12 +12,16 @@ You can find the open-source implementation of this environment in the gym-puddl
 ## Installation
 Make a virtual env for your project
 
-`python -m venv venv
-source venv/bin/activate`
+```python
+python -m venv venv
+source venv/bin/activate
+```
 
 Then navigate to the library directory and run this line in the library directory.
 
-`pip install -e .`
+```python
+pip install -e .
+```
 
 ## Usage
 ```python
