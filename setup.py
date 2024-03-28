@@ -8,5 +8,5 @@ setup(
         "numpy==1.26.4",
         "pygame==2.5.2",
     ],  # And any other dependencies we need
-    python_requires=">=3.11",
+    python_requires=">=3.11", # compatible python version
 )
