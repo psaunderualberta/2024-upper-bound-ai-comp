@@ -1,9 +1,7 @@
-# gym-puddle
-Puddle World is an environment that got traction in the 1990s which was studied by Bryan and Moore (1995) and then later picked up by Rich Sutton in the same year. You can find more information about the environment in the paper "Generalization in Reinforcement Learning: Successful Examples Using Sparse Coarse Coding"
+# Reviving Puddle World - Upper Bound (2024) AI Competition
+Puddle World is an environment that got traction in the 1990s which was studied by Bryan and Moore (1995) and then later picked up by Rich Sutton in the same year. The agent starts at an initial location or state (denoted in red) in the Puddle World and the task for the agent is to navigate around the puddles (avoiding them) to reach the final destination or goal state (denoted in green). You can find more information about the environment in the paper "Generalization in Reinforcement Learning: Successful Examples Using Sparse Coarse Coding"
 
-The agent starts at an initial location or state in the Puddle World and the task for the agent is to navigate around the puddles (avoiding them) to reach the final destination or goal state.
-
-You can find the open-source implementation of this environment in the gym-puddle github repository. This implementation is compatible with the gymnasium library, which makes it easy for you to interact with the environment.
+This repository is an extension of the previous open-source implementation of the environment. This implementation is compatible with the gymnasium library, making it easy to interact with the environment.
 
 <kbd>
   <img src='puddle_world.png'/>
