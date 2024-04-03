@@ -7,6 +7,6 @@ setup(
         "gymnasium==0.29.1",
         "numpy==1.26.4",
         "pygame==2.5.2",
-    ],  # And any other dependencies we need
+    ],  #Any other dependencies would go here
     python_requires=">=3.11", # compatible python version
 )
