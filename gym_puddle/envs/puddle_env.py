@@ -52,7 +52,7 @@ class PuddleEnv(gymnasium.Env):
         self.num_steps = 0
 
         # Rendering
-        self.render_mode = "human"
+        self.render_mode = "rgb_array"
         self.window = None
         self.clock = None
         self.window_size = 400
@@ -228,8 +228,7 @@ class PuddleEnv(gymnasium.Env):
 
         else:  # rgb_array
             return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))
-        return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))
-
+        
     def close(self) -> None:
         """
         Close the environment.
