@@ -27,6 +27,7 @@ source myenv/bin/activate
 Then navigate to the library directory and run this line in the library directory.
 
 ```python
+cd path/to/directory
 pip install -e .
 ```
 
