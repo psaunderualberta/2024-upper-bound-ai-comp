@@ -36,9 +36,11 @@ env = gym.make('PuddleWorld-v0')
 ##  Configurations
 Your task is to train an agent that can generalize well across different provided configurations of the environment. Each of these configurations feature different positions for puddles, which makes it challenging for the agent to find the most rewarding path to the goal.
 
-You can find these configurations in the `env_configs` folder of the repository. In order to access each version of the environment, you can provide the `.json` file indicating the environment details, and intitialize the puddle world as mentioned in the  `getting_started.ipynb` Colab guide.
-You can specify one of the `.json` files for the various environment configurations provided, where pw1.json corresponds to the original puddle world environment in the paper.
+You can find these configurations in the `env_configs` folder of the repository. 
+You can specify one of the `.json` files for the various environment configurations provided, where `pw1.json` corresponds to the original puddle world environment in the paper.
+You can then intitialize the puddle world as mentioned in the  `getting_started.ipynb` Colab guide.
 Here is a snippet of how you can intitalize your environment with the desired configuration:
+
 ```
 json_file = 'path/to/json/' #include the path to the json file here
 with open(json_file) as f:
