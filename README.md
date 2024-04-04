@@ -3,9 +3,11 @@ Puddle World is an environment that got traction in the 1990s which was studied 
 
 This repository is an extension of the previous open-source implementation of the environment. This implementation is compatible with the gymnasium library, making it easy to interact with the environment.
 
-<kbd>
-  <img src='puddle_world.png'/>
-</kbd>
+<p align="center">
+  <kbd>
+    <img src='puddle_world.png'/>
+  </kbd>
+</p>
 
 ## Installation
 Make a virtual env for your project

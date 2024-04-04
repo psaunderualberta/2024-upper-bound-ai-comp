@@ -16,6 +16,7 @@ class PuddleEnv(gymnasium.Env):
         thrust: float = 0.05,
         puddle_top_left: list[list[float]] = [[0, 0.85], [0.35, 0.9]],
         puddle_width: list[list[float]] = [[0.55, 0.2], [0.2, 0.6]],
+        render_mode: str = "rgb_array",
     ) -> None:
         """
         Initialize the PuddleEnv environment.
@@ -52,13 +53,14 @@ class PuddleEnv(gymnasium.Env):
         self.num_steps = 0
 
         # Rendering
-        self.render_mode = "rgb_array"
+        self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
+        self.render_mode = render_mode
         self.window = None
         self.clock = None
         self.window_size = 400
         self.min_reward = self.find_min_reward()
         self.heatmap = False
-        self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
+        
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
         """
@@ -170,6 +172,8 @@ class PuddleEnv(gymnasium.Env):
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
+            #set teh window name
+            pygame.display.set_caption("Puddle World")
             self.window = pygame.display.set_mode((self.window_size, self.window_size))
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
