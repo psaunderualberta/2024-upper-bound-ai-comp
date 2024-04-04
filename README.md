@@ -41,7 +41,7 @@ You can specify one of the `.json` files for the various environment configurati
 You can then intitialize the puddle world as mentioned in the  `getting_started.ipynb` Colab guide.
 Here is a snippet of how you can intitalize your environment with the desired configuration:
 
-```
+```python
 json_file = 'path/to/json/' #include the path to the json file here
 with open(json_file) as f:
   env_setup = json.load(f) #load the json file with the environment configuration
