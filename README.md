@@ -51,8 +51,10 @@ Here is a snippet of how you can intitalize your environment with the desired co
 
 ```python
 json_file = 'path/to/json/' #include the path to the json file here
+
 with open(json_file) as f:
   env_setup = json.load(f) #load the json file with the environment configuration
+  
 env = gym.make( #initialize the environment with the corresponding values
   "PuddleWorld-v0",
   start=env_setup["start"],
@@ -68,6 +70,6 @@ env = gym.make( #initialize the environment with the corresponding values
 
 
 # More Details and Getting Started
-For more details on how to get started with the environment, refer to `getting_started.ipynb` Colab file. In this guide, we go through how to install the environment, the environment details, and how to initialize an instance with the desired configurations. 
+For more details on how to get started with the environment, refer to `getting_started.ipynb` Colab file. In this guide, we go through how to install the environment, how to access the environment details, and how to initialize an instance with the desired configurations. 
 
 Furthermore, we show you how to visualize the environment, and how you can run a random, human, and DQN agent on the environment. We illustrate how a simple training loop would look like and provide guidance on how to make a submission file for the Kaggle Competition.
