@@ -74,10 +74,10 @@ class PuddleEnv(gymnasium.Env):
         """
         # if number of steps taken is more than 1e5, then trunc is set to True
         self.num_steps += 1
-        # if self.num_steps > 1e5:
-        #     trunc = True
-        # else:
-        #     trunc = False  
+        if self.num_steps > 1e4:
+            trunc = True
+        else:
+            trunc = False  
         trunc = False
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
