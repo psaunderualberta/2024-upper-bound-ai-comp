@@ -78,7 +78,6 @@ class PuddleEnv(gymnasium.Env):
             trunc = True
         else:
             trunc = False  
-        trunc = False
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
             type(action),
