@@ -1,20 +1,20 @@
 # Reviving Puddle World - Upper Bound (2024) AI Competition
-Puddle World is an environment that got traction in the 1990s which was studied by [Boyan and Moore (1995)](https://proceedings.neurips.cc/paper/1994/file/ef50c335cca9f340bde656363ebd02fd-Paper.pdf) and then later picked up by Rich Sutton in the same year. The agent starts at an initial state (denoted in red) in the Puddle World and the task for the agent is to navigate around the puddles (denoted in black) to reach the goal state (denoted in green). 
+Puddle World is an environment that got traction in the 1990s which was studied by [Boyan and Moore (1995)](https://www.ri.cmu.edu/pub_files/pub1/boyan_justin_1995_1/boyan_justin_1995_1.pdf) and then later picked up by Rich Sutton in the same year. [Rich (1995)](https://proceedings.neurips.cc/paper_files/paper/1995/hash/8f1d43620bc6bb580df6e80b0dc05c48-Abstract.html) conducted various experiments on the environment, and we use this study as a reference for our implementation of the Puddle World.
 
-In the Puddle World, there are four actions, up, down, right, and left, which moves the agent approximately 0.05 in these directions unless the movement would cause the agent to leave the limits of the space. A random gaussian noise with standard deviation 0.01 is also added to the action along both dimensions. 
-The reward for this task is −1 for each time step, with additional penalties if either or both of the two oval “puddles” were entered. These penalties are -400 times the distance into the puddle (distance to the nearest edge).
- The puddles's top left position is [0. , 0.85] and [0.35, 0.9] respectively, and the width and height for them is [0.55, 0.2 ] and [0.2, 0.6].
- The start state is located at [0.2, 0.4], and the goal is to reach [1.0, 1.0].
-
-You can find more information about the environment in the paper [Generalization in Reinforcement Learning: Successful Examples Using Sparse Coarse Coding](https://proceedings.neurips.cc/paper_files/paper/1995/hash/8f1d43620bc6bb580df6e80b0dc05c48-Abstract.html)
-
-This repository is an extension of the previous open-source implementation of the environment. This implementation is compatible with the gymnasium library, making it easy to interact with the environment.
+The agent starts at an initial state (denoted in red) in the Puddle World and the task for the agent is to navigate around the puddles (denoted in black) to reach the goal state (denoted in green). 
 
 <p align="center">
   <kbd>
     <img src='puddle_world.png'/>
   </kbd>
 </p>
+
+Building upon the details from Rich's study:
+
+In Puddle World, there are four directional movements available to the agent: up, down, right, and left. Each movement shifts the agent by approximately 0.05 units in the specified direction, with adjustments made to prevent the agent from moving beyond the boundaries of the space. Additionally, a random Gaussian noise, with a standard deviation of 0.01, is introduced to the action along both dimensions. The task's reward imposes a penalty of -1 for each time step. Further penalties are incurred if the agent enters either or both of the two oval-shaped "puddles." These penalties are calculated as -400 times the distance into the puddle, measured from the nearest edge. The puddles are positioned at coordinates [0. , 0.85] and [0.35, 0.9], with respective widths and heights of [0.55, 0.2] and [0.2, 0.6]. The starting state for the agent is situated at [0.2, 0.4], and the ultimate objective is to reach the point [1.0, 1.0].
+
+This repository is an extension of the previous open-source implementation of the environment. This implementation is compatible with the gymnasium library, making it easy to interact with the environment.
+
 
 ## Installation
 Make a virtual env for your project
