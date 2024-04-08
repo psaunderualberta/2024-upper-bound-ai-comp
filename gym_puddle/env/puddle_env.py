@@ -72,7 +72,6 @@ class PuddleEnv(gymnasium.Env):
         Returns:
             tuple[np.ndarray, float, bool, bool, dict]: Tuple containing the new position, reward, done flag, trunc flag, and additional information.
         """
-        # if number of steps taken is more than 1e5, then trunc is set to True
         self.num_steps += 1
         trunc = False # not truncated 
         assert self.action_space.contains(action), "%r (%s) invalid" % (
