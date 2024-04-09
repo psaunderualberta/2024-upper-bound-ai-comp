@@ -24,7 +24,13 @@ python -m venv myenv
 source myenv/bin/activate
 ```
 
-Then navigate to the library directory and run this line in the library directory.
+First, you will need to clone the repo by the following command:
+
+```
+git clone https://github.com/Amii-Open-Source/gym-puddle.git
+```
+
+Then navigate to the repo directory by using the `cd` command, and run the following install command. 
 
 ```python
 cd path/to/directory
