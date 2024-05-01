@@ -1,0 +1,1 @@
+python -m rl_zoo3.train --algo ppo --env NoPuddleWorldStochastic-v0 --conf-file config/ppo.yml  -optimize --study-name test --n-jobs 4 -P --sampler tpe --pruner median
