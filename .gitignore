@@ -100,5 +100,8 @@ ENV/
 /utils/
 
 
+# Videos
+*.mp4
 
-
+# zips
+*.zip
