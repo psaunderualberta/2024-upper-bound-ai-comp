@@ -104,3 +104,6 @@ venv/
 
 # zips
 *.zip
+
+# logs
+logs/

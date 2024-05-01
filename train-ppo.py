@@ -14,14 +14,14 @@ import os
 
 def train():
     #train the model, and save the trained model
-    env = gym.make("PuddleWorld-v0")
+    env = gym.make("NoPuddleWorldStochastic-v0")
     ppo_model = PPO('MlpPolicy', env, verbose=1)
     ppo_model.learn(total_timesteps=int(1e5))   
     ppo_model.save("ppo_model")
 
 def enjoy():
-    env = gym.make("PuddleWorld-v0")
-    ppo_model = PPO.load("ppo_model")
+    env = gym.make("NoPuddleWorldStochastic-v0")
+    ppo_model = PPO.load("ppo_model.zip")
 
     obs, info = env.reset()
 
@@ -39,8 +39,6 @@ def enjoy():
             action, _states = ppo_model.predict(obs)
             obs, reward, done, trunc, info = env.step(action)
             total_reward += reward
-            if done == True:
-                print("here")
 
             image = env.render()
             frames.append(image)
@@ -65,5 +63,5 @@ def enjoy():
 
 
 if __name__ == "__main__":
-    train()
+    # train()
     enjoy()
