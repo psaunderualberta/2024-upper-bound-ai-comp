@@ -1,67 +1,68 @@
-import gymnasium as gym
-import gym_puddle
-
-from stable_baselines3 import PPO
-from stable_baselines3.dqn import MlpPolicy as DQNPolicy
-
-# import matplotlib.pyplot as plt
-# import numpy as np
-
-from util import visualize
-
-import os
+import numpy as np
+from rl_zoo3.train import train as rl_zoo_train
+from unittest.mock import patch
+import sys
 
 
 def train():
-    #train the model, and save the trained model
-    env = gym.make("NoPuddleWorldStochastic-v0")
-    ppo_model = PPO('MlpPolicy', env, verbose=1)
-    ppo_model.learn(total_timesteps=int(1e5))   
-    ppo_model.save("ppo_model")
+    # train the model, and save the trained model
+    environment_name = "NoPuddleWorldStochastic-v0"
 
-def enjoy():
-    env = gym.make("NoPuddleWorldStochastic-v0")
-    ppo_model = PPO.load("ppo_model.zip")
+    print(sys.argv)
+    prog_constants = [
+        "train.py",
+        "--algo", "ppo",
+        "--env", environment_name,
+        "--conf-file", "./config/ppo.yml",
+        "--eval-freq", "-1",
+        "-n", "50000",
+    ]
 
-    obs, info = env.reset()
+    stochastic = True
 
-    # Create an empty list to store the frames
-    frames = []
-    episode_rewards = []
+    difficulties = np.linspace(1, 1, 10)
 
-    for episode in range(1):
-        total_reward = 0
-        done = False
-        num_steps = 0
+    # Train the model without puddles
+    save_path = ""
+    for path_difficulty in difficulties:
 
-        while not done and num_steps <=1000: # to avoid infinite loops for the untuned DQN we set a truncation limit, but you should make your agent sophisticated enough to avoid infinite-step episodes
-            num_steps +=1
-            action, _states = ppo_model.predict(obs)
-            obs, reward, done, trunc, info = env.step(action)
-            total_reward += reward
+        if save_path:
+            prog_constants.extend(["-i", f"{save_path}.zip"])
 
-            image = env.render()
-            frames.append(image)
+        # Append keyword arguments to the command
+        prog_constants.extend(
+            [
+                "--env-kwargs",
+                f"path_difficulty:{path_difficulty}",
+                f"stochastic:{stochastic}",
+                "puddle_difficulty:0.0",
+            ]
+        )
+        print(" ".join(prog_constants))
 
-            if done:
-                print(f"total reward in this episode: {total_reward}")
-                episode_rewards.append(total_reward)
-                total_reward = 0
-                break
+        with patch.object(sys, "argv", prog_constants):
+            save_path = rl_zoo_train()
 
-    env.close()
+    # Train the model with puddles
+    for puddle_difficulty in difficulties:
 
-    if episode_rewards == []:
-        print("no episode finished in this run.")
-    else:
-        for i, reward in enumerate(episode_rewards):
-            print(f"episode {i}: reward: {reward}")
+        if save_path:
+            prog_constants.extend(["-i", f"{save_path}.zip"])
 
-    video_file = os.path.join("videos", "PPO.mp4")
-    visualize(frames, video_file)
+        # Append keyword arguments to the command
+        prog_constants.extend(
+            [
+                "--env-kwargs",
+                f"path_difficulty:1.0",
+                f"stochastic:{stochastic}",
+                f"puddle_difficulty:{puddle_difficulty}",
+            ]
+        )
+        print(" ".join(prog_constants))
 
+        with patch.object(sys, "argv", prog_constants):
+            save_path = rl_zoo_train()
 
 
 if __name__ == "__main__":
-    # train()
-    enjoy()
+    train()
