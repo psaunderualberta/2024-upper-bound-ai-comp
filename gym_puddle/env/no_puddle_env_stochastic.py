@@ -33,15 +33,15 @@ class NoPuddleEnvStochastic(PuddleEnv):
         self.kwargs = kwargs
         self.path_difficulty = path_difficulty
         self.puddle_difficulty = puddle_difficulty
+        self.stochastic = stochastic
         env_setup = dict(self.kwargs, **self.get_env_setup(env_version))
         super().__init__(**env_setup)
-        self.stochastic = stochastic
 
     def reset(self, seed=None, options=None):
         if self.stochastic:
-            # new_env_version = random.choice(self.valid_envs)
+            new_env_version = random.choice(self.valid_envs)
             new_seed = random.choice(self.valid_seeds)
-            self.env_setup = dict(self.kwargs, **self.get_env_setup(1))
+            self.env_setup = dict(self.kwargs, **self.get_env_setup(new_env_version))
             super().__init__(**self.env_setup)
             return super().reset(new_seed)
 
@@ -69,5 +69,8 @@ class NoPuddleEnvStochastic(PuddleEnv):
         for i, (s, g) in enumerate(zip(env_setup["start"], env_setup["goal"])):
             shrink_factor = 1 - self.path_difficulty
             env_setup["start"][i] = s + shrink_factor * (g - s)
+
+        if self.stochastic:
+            env_setup["start"] = []
 
         return env_setup

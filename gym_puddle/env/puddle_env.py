@@ -137,7 +137,7 @@ class PuddleEnv(gymnasium.Env):
         """
         self.np_random, seed = seeding.np_random(seed)
         self.num_steps = 0
-        if self.start is None:
+        if len(self.start) == 0:
             self.pos = self.observation_space.sample()
             while (
                 np.linalg.norm((self.pos - self.goal), ord=1) < self.goal_threshold
