@@ -27,7 +27,7 @@ class NoPuddleEnvStochastic(PuddleEnv):
         seed=1,
         path_difficulty=1.0,
         puddle_difficulty=1.0,
-        stochastic=False,
+        stochastic=True,
         **kwargs,
     ):
         self.kwargs = kwargs

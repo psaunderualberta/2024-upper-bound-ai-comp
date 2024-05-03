@@ -10,14 +10,15 @@ def train():
 
     algorithm = "dqn"
 
-    print(sys.argv)
     prog_constants = [
         "train.py",
         "--algo", algorithm,
         "--env", environment_name,
         "--conf-file", f"./config/{algorithm}.yml",
         "--eval-freq", "-1",
-        "-n", "50000",
+        "-n", "100000",
+        # "-optimize", "--n-trials", "100", "--n-jobs", "3",
+        # "--sampler", "tpe", "--pruner", "median"
     ]
 
     stochastic = True

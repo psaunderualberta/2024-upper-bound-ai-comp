@@ -27,10 +27,8 @@ def record_video():
 
     dirs = os.listdir("logs/ppo")
     experiment_ids = [d.split("_")[-1] for d in dirs]
-    print(experiment_ids)
 
     # Train the model without puddles
-    save_path = ""
     for experiment_id in experiment_ids:
 
         # Append keyword arguments to the command
@@ -38,7 +36,10 @@ def record_video():
         print(" ".join(prog_constants))
 
         with patch.object(sys, "argv", prog_constants):
-            rl_zoo_record_video()
+            try:
+                rl_zoo_record_video()
+            except ValueError as e:
+                print(e)
 
 if __name__ == "__main__":
     record_video()
