@@ -17,6 +17,7 @@ class PuddleEnv(gymnasium.Env):
         puddle_top_left: list[list[float]] = [[0, 0.85], [0.35, 0.9]],
         puddle_width: list[list[float]] = [[0.55, 0.2], [0.2, 0.6]],
         render_mode: str = "rgb_array",
+        puddle_agg_func: str = "min",
     ) -> None:
         """
         Initialize the PuddleEnv environment.
@@ -30,6 +31,8 @@ class PuddleEnv(gymnasium.Env):
             puddle_top_left (list[list[float]]): List of puddle top left positions.
             puddle_width (list[list[float]]): List of puddle width values.
         """
+
+        self.puddle_agg_func = puddle_agg_func
 
         self.start = np.array(start)
         self.goal = np.array(goal)
@@ -122,7 +125,10 @@ class PuddleEnv(gymnasium.Env):
         elif reward_puddles == []:
             return -1  # -1 for each timestep
         else:
-            return min(reward_puddles)
+            if self.puddle_agg_func == "min":
+                return min(reward_puddles)
+            elif self.puddle_agg_func == "sum":
+                return sum(reward_puddles)
 
     def reset(self, seed: int = None, options: dict = None) -> tuple[np.ndarray, dict]:
         """

@@ -2,9 +2,12 @@ import numpy as np
 from rl_zoo3.train import train as rl_zoo_train
 from unittest.mock import patch
 import sys
+import os
 
 
-def train():
+file_location = os.path.abspath(os.path.dirname(__file__))
+
+def optimize():
     # train the model, and save the trained model
     environment_name = "NoPuddleWorldStochastic-v0"
 
@@ -17,17 +20,20 @@ def train():
         "--conf-file", f"./config/{algorithm}.yml",
         "--eval-freq", "-1",
         "-n", "100000",
-        # "-optimize", "--n-trials", "100", "--n-jobs", "3",
-        # "--sampler", "tpe", "--pruner", "median"
+        "-optimize", "--n-trials", "100", "--n-jobs", "3",
+        "--study-name", "test"
     ]
 
     stochastic = True
 
-    difficulties = np.linspace(0.1, 1, 10)
+    path_difficulties = np.linspace(1, 1, 11)
+    puddle_difficulties = np.linspace(0.8, 0.8, 1)
 
     # Train the model without puddles
     save_path = ""
-    for path_difficulty in difficulties:
+    print(" ".join(prog_constants))
+    exit()
+    for path_difficulty, puddle_difficulty in zip(path_difficulties, puddle_difficulties):
 
         if save_path:
             program = prog_constants + ["-i", f"{save_path}.zip"]
@@ -39,26 +45,6 @@ def train():
             "--env-kwargs",
             f"path_difficulty:{path_difficulty}",
             f"stochastic:{stochastic}",
-            "puddle_difficulty:0.0",
-        ]
-        print(" ".join(program))
-
-        with patch.object(sys, "argv", program):
-            save_path = rl_zoo_train()
-
-    # Train the model with puddles
-    for puddle_difficulty in difficulties:
-
-        if save_path:
-            program = prog_constants + ["-i", f"{save_path}.zip"]
-        else:
-            program = prog_constants
-
-        # Append keyword arguments to the command
-        program = program + [
-            "--env-kwargs",
-            f"path_difficulty:1.0",
-            f"stochastic:{stochastic}",
             f"puddle_difficulty:{puddle_difficulty}",
         ]
         print(" ".join(program))
@@ -68,4 +54,4 @@ def train():
 
 
 if __name__ == "__main__":
-    train()
+    optimize()

@@ -19,13 +19,13 @@ def record_video():
 
     prog_constants = [
         "record_video.py",
-        "--algo", "ppo",
+        "--algo", "dqn",
         "--env", environment_name,
         "-n", "1000",
         "-f", "logs/"
     ]
 
-    dirs = os.listdir("logs/ppo")
+    dirs = os.listdir("logs/dqn")
     experiment_ids = [d.split("_")[-1] for d in dirs]
 
     # Train the model without puddles
