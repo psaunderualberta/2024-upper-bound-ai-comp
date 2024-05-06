@@ -74,13 +74,11 @@ class NoPuddleEnvStochastic(PuddleEnv):
                 env_setup["puddle_width"][i] = list(map(lambda x: x * self.puddle_difficulty, w))
 
         # Shrink the path from 'path_difficulty' times the original start -> goal length
-        for i, (s, g) in enumerate(zip(env_setup["start"], env_setup["goal"])):
-            shrink_factor = 1 - self.path_difficulty
-            env_setup["start"][i] = s + shrink_factor * (g - s)
+        env_setup["shrink_factor"] = 1 - self.path_difficulty
 
         if self.stochastic:
             env_setup["start"] = []
 
-        env_setup["puddle_agg_func"] = "min"
+        env_setup["puddle_agg_func"] = "sum"
 
         return env_setup

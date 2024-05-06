@@ -32,10 +32,10 @@ def record_video():
     for experiment_id in experiment_ids:
 
         # Append keyword arguments to the command
-        prog_constants.extend(["--exp-id", experiment_id])
-        print(" ".join(prog_constants))
+        program = prog_constants + ["--exp-id", experiment_id]
+        print(" ".join(program))
 
-        with patch.object(sys, "argv", prog_constants):
+        with patch.object(sys, "argv", program):
             try:
                 rl_zoo_record_video()
             except ValueError as e:

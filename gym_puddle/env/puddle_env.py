@@ -18,6 +18,7 @@ class PuddleEnv(gymnasium.Env):
         puddle_width: list[list[float]] = [[0.55, 0.2], [0.2, 0.6]],
         render_mode: str = "rgb_array",
         puddle_agg_func: str = "min",
+        shrink_factor: float = 0.0,
     ) -> None:
         """
         Initialize the PuddleEnv environment.
@@ -33,6 +34,7 @@ class PuddleEnv(gymnasium.Env):
         """
 
         self.puddle_agg_func = puddle_agg_func
+        self.shrink_factor = shrink_factor
 
         self.start = np.array(start)
         self.goal = np.array(goal)
@@ -151,6 +153,8 @@ class PuddleEnv(gymnasium.Env):
                 self.pos = self.observation_space.sample()
         else:
             self.pos = copy.copy(self.start)
+
+        self.pos = self.get_shrunk_start(self.pos)
         return self.pos, {}
 
     def render(self) -> np.ndarray or None:  # type: ignore
@@ -255,6 +259,15 @@ class PuddleEnv(gymnasium.Env):
                     min_reward = reward
 
         return min_reward
+    
+    def get_shrunk_start(self, start) -> np.ndarray:
+        """
+        Get the shrunk start position.
+
+        Returns:
+            np.ndarray: Shrunk start position.
+        """
+        return start + self.shrink_factor * (self.goal - start)
 
     def close(self) -> None:
         """
