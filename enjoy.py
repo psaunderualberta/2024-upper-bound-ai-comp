@@ -27,6 +27,7 @@ def record_video():
 
     dirs = os.listdir("logs/dqn")
     experiment_ids = [d.split("_")[-1] for d in dirs]
+    experiment_ids = sorted([d for d in experiment_ids if d.isdigit()])[-1]
 
     # Train the model without puddles
     for experiment_id in experiment_ids:

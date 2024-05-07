@@ -65,6 +65,10 @@ class NoPuddleEnvStochastic(PuddleEnv):
                 env_setup["puddle_top_left"] += new_env_setup["puddle_top_left"]
                 env_setup["puddle_width"] += new_env_setup["puddle_width"]
 
+        # Big puddle in the middle
+        env_setup["puddle_top_left"] = [[0.2, 0.8]]
+        env_setup["puddle_width"] = [[0.6, 0.6]]
+
         # Remove puddles if difficulty is 0, otherwise scale the puddle width
         if self.puddle_difficulty == 0:
             env_setup["puddle_top_left"] = []

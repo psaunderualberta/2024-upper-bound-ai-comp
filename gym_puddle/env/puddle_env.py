@@ -4,6 +4,7 @@ from gymnasium.utils import seeding
 import numpy as np
 import copy
 import pygame
+import heapq
 
 
 class PuddleEnv(gymnasium.Env):
@@ -83,15 +84,28 @@ class PuddleEnv(gymnasium.Env):
             type(action),
         )
 
-        noise = self.np_random.normal(loc=0.0, scale=self.noise, size=(2,))
-        self.pos += self.actions[action] + noise
-        self.pos = np.clip(self.pos, 0.0, 1.0)
+        self.pos = self._get_action(self.pos, action)
 
         reward = self._get_reward(self.pos)
 
         done = np.linalg.norm((self.pos - self.goal), ord=1) < self.goal_threshold
 
+        if not done and self.num_steps >= 1000:
+            done = True
+            trunc = True
+
         return self.pos, reward, done, trunc, {}
+    
+    def _get_action(self, pos: np.ndarray, action: int, add_noise = True) -> np.ndarray:
+
+        new_pos = pos + self.actions[action]
+
+        if add_noise:
+            noise = self.np_random.normal(loc=0.0, scale=self.noise, size=(2,))
+            new_pos += noise
+
+        return np.clip(new_pos, 0.0, 1.0)
+
 
     def _get_reward(self, pos: np.ndarray) -> float:
         """

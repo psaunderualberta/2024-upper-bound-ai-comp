@@ -24,18 +24,18 @@ def train():
         "--eval-freq",
         "-1",
         "-n",
-        "1500000",
-        "--track",
-        "--wandb-project-name",
-        "upper-bound-2024-comp",
-        "--wandb-entity",
-        "psaunder",
+        "1000000",
+        # "--track",
+        # "--wandb-project-name",
+        # "upper-bound-2024-comp",
+        # "--wandb-entity",
+        # "psaunder",
     ]
 
     stochastic = True
 
-    path_difficulties = np.linspace(0.2, 1, 6)
-    puddle_difficulties = np.linspace(1, 1, 11)
+    path_difficulties = np.linspace(1, 1, 1)
+    puddle_difficulties = np.linspace(1, 1, 1)
 
     # Train the model without puddles
     save_path = ""

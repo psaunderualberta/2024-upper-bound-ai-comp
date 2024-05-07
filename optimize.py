@@ -4,35 +4,30 @@ from unittest.mock import patch
 import sys
 import os
 
-
 file_location = os.path.abspath(os.path.dirname(__file__))
 
 def optimize():
     # train the model, and save the trained model
     environment_name = "NoPuddleWorldStochastic-v0"
 
-    algorithm = "dqn"
+    algorithm = "ppo"
 
     prog_constants = [
         "train.py",
         "--algo", algorithm,
         "--env", environment_name,
         "--conf-file", f"./config/{algorithm}.yml",
-        "--eval-freq", "-1",
-        "-n", "100000",
-        "-optimize", "--n-trials", "100", "--n-jobs", "3",
-        "--study-name", "test"
+        "-n", "150000",
+        "-optimize", "--n-trials", "200", "--n-jobs", "8"
     ]
 
     stochastic = True
 
-    path_difficulties = np.linspace(1, 1, 11)
-    puddle_difficulties = np.linspace(0.8, 0.8, 1)
+    path_difficulties = np.linspace(1, 1, 1)
+    puddle_difficulties = np.linspace(1, 1, 1)
 
     # Train the model without puddles
     save_path = ""
-    print(" ".join(prog_constants))
-    exit()
     for path_difficulty, puddle_difficulty in zip(path_difficulties, puddle_difficulties):
 
         if save_path:
@@ -46,6 +41,7 @@ def optimize():
             f"path_difficulty:{path_difficulty}",
             f"stochastic:{stochastic}",
             f"puddle_difficulty:{puddle_difficulty}",
+            "puddle_agg_func:sum",
         ]
         print(" ".join(program))
 

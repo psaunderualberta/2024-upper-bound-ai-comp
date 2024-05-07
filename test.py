@@ -28,7 +28,7 @@ import json
 import numpy as np
 import gymnasium as gym
 
-from stable_baselines3 import DQN
+from stable_baselines3 import PPO
 import gym_puddle
 import argparse
 import sys
@@ -45,7 +45,7 @@ def main():
     model_path = args.model_path
 
     # Load the model
-    model = DQN.load(model_path)
+    model = PPO.load(model_path)
 
     # Load the environments
     envs = []
