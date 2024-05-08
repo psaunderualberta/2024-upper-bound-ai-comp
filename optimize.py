@@ -17,8 +17,9 @@ def optimize():
         "--algo", algorithm,
         "--env", environment_name,
         "--conf-file", f"./config/{algorithm}.yml",
-        "-n", "150000",
-        "-optimize", "--n-trials", "200", "--n-jobs", "8"
+        "-n", "1000000",
+        "-optimize", "--n-trials", "300", "--n-jobs", "8",
+        "--sampler", "tpe", "--pruner", "median", "--verbose", "1"
     ]
 
     stochastic = True

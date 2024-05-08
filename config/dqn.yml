@@ -11,12 +11,13 @@ PuddleWorld-v0:
   gradient_steps: 128
   exploration_fraction: 0.16
   exploration_final_eps: 0.04
+  policy_kwargs: "dict(net_arch=[256, 256])"
 
 NoPuddleWorldStochastic-v0:
   n_timesteps: !!float 5e4
   policy: 'MlpPolicy'
-  learning_rate: !!float 1.0e-6
-  batch_size: 128
+  learning_rate: !!float 2.3e-3
+  batch_size: 64
   buffer_size: 100000
   learning_starts: 1000
   gamma: 0.99
@@ -25,4 +26,19 @@ NoPuddleWorldStochastic-v0:
   gradient_steps: 128
   exploration_fraction: 0.16
   exploration_final_eps: 0.04
-  policy_kwargs: "dict(net_arch=[32, 32])"
+  policy_kwargs: "dict(net_arch=[256, 256])"
+
+PuddleWorldProxy-v0:
+  n_timesteps: !!float 5e4
+  policy: 'MlpPolicy'
+  learning_rate: !!float 2.3e-3
+  batch_size: 64
+  buffer_size: 100000
+  learning_starts: 1000
+  gamma: 0.99
+  target_update_interval: 10
+  train_freq: 256
+  gradient_steps: 128
+  exploration_fraction: 0.16
+  exploration_final_eps: 0.04
+  policy_kwargs: "dict(net_arch=[256, 256])"

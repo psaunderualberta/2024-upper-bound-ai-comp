@@ -11,7 +11,7 @@ def train():
     # train the model, and save the trained model
     environment_name = "NoPuddleWorldStochastic-v0"
 
-    algorithm = "dqn"
+    algorithm = "ppo"
 
     prog_constants = [
         "train.py",
