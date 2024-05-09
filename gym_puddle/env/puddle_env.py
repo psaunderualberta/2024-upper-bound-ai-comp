@@ -60,6 +60,7 @@ class PuddleEnv(gymnasium.Env):
         self.window_size = 400
         self.min_reward = self.find_min_reward()
         self.heatmap = False
+        
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
         """
@@ -72,7 +73,7 @@ class PuddleEnv(gymnasium.Env):
             tuple[np.ndarray, float, bool, bool, dict]: Tuple containing the new position, reward, done flag, trunc flag, and additional information.
         """
         self.num_steps += 1
-        trunc = False  # we don't have a truncation condition for this environment
+        trunc = False # we don't have a truncation condition for this environment
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
             type(action),
@@ -118,9 +119,9 @@ class PuddleEnv(gymnasium.Env):
             reward_puddles == []
             and np.linalg.norm((pos - self.goal), ord=1) < self.goal_threshold
         ):
-            return 0  # If the agent is in the goal, return 0
+            return 0 # If the agent is in the goal, return 0
         elif reward_puddles == []:
-            return -1  # -1 for each timestep
+            return -1 #-1 for each timestep
         else:
             return min(reward_puddles)
 
@@ -137,7 +138,7 @@ class PuddleEnv(gymnasium.Env):
         """
         self.np_random, seed = seeding.np_random(seed)
         self.num_steps = 0
-        if len(self.start) == 0:
+        if self.start is None:
             self.pos = self.observation_space.sample()
             while (
                 np.linalg.norm((self.pos - self.goal), ord=1) < self.goal_threshold
@@ -166,7 +167,7 @@ class PuddleEnv(gymnasium.Env):
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
-            # set teh window name
+            #set teh window name
             pygame.display.set_caption("Puddle World")
             self.window = pygame.display.set_mode((self.window_size, self.window_size))
         if self.clock is None and self.render_mode == "human":
@@ -197,6 +198,8 @@ class PuddleEnv(gymnasium.Env):
         )
         pygame.draw.circle(canvas, (0, 255, 0), goal_pos, 10)
 
+       
+
         # Draw the puddles
         for top_left, wid in zip(self.puddle_top_left, self.puddle_width):
             puddle_pos = (
@@ -224,7 +227,7 @@ class PuddleEnv(gymnasium.Env):
 
         else:  # rgb_array
             return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))
-
+        
     def close(self) -> None:
         """
         Close the environment.
