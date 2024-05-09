@@ -17,6 +17,7 @@ class PuddleEnv(gymnasium.Env):
         puddle_top_left: list[list[float]] = [[0, 0.85], [0.35, 0.9]],
         puddle_width: list[list[float]] = [[0.55, 0.2], [0.2, 0.6]],
         render_mode: str = "rgb_array",
+        puddle_agg_func: str = "min"
     ) -> None:
         """
         Initialize the PuddleEnv environment.
@@ -60,6 +61,8 @@ class PuddleEnv(gymnasium.Env):
         self.window_size = 400
         self.min_reward = self.find_min_reward()
         self.heatmap = False
+
+        self.puddle_agg_func = puddle_agg_func
         
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
@@ -123,7 +126,13 @@ class PuddleEnv(gymnasium.Env):
         elif reward_puddles == []:
             return -1 #-1 for each timestep
         else:
-            return min(reward_puddles)
+            if self.puddle_agg_func == "min":
+                return min(reward_puddles)
+            elif self.puddle_agg_func == "sum":
+                return sum(reward_puddles)
+            else:
+                raise ValueError(f"Puddle Agg Function '{self.puddle_agg_func}' is not known!")
+
 
     def reset(self, seed: int = None, options: dict = None) -> tuple[np.ndarray, dict]:
         """
