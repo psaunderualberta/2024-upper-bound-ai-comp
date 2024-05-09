@@ -4,6 +4,7 @@ from gymnasium.utils import seeding
 import numpy as np
 import copy
 import pygame
+from numba import njit
 
 
 class PuddleEnv(gymnasium.Env):
@@ -34,6 +35,7 @@ class PuddleEnv(gymnasium.Env):
 
         self.start = np.array(start)
         self.goal = np.array(goal)
+        self.puddle_agg_func = puddle_agg_func
 
         self.goal_threshold = goal_threshold
 
@@ -62,7 +64,6 @@ class PuddleEnv(gymnasium.Env):
         self.min_reward = self.find_min_reward()
         self.heatmap = False
 
-        self.puddle_agg_func = puddle_agg_func
         
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
@@ -82,56 +83,13 @@ class PuddleEnv(gymnasium.Env):
             type(action),
         )
 
-        noise = self.np_random.normal(loc=0.0, scale=self.noise, size=(2,))
-        self.pos += self.actions[action] + noise
-        self.pos = np.clip(self.pos, 0.0, 1.0)
+        self.pos = get_new_pos(self.pos, self.actions, action, self.noise)
 
-        reward = self._get_reward(self.pos)
+        reward = get_reward(self.pos, self.goal, self.goal_threshold, self.puddle_top_left, self.puddle_width, self.puddle_agg_func)
 
-        done = np.linalg.norm((self.pos - self.goal), ord=1) < self.goal_threshold
+        done = is_done(self.pos, self.goal, self.goal_threshold)
 
         return self.pos, reward, done, trunc, {}
-
-    def _get_reward(self, pos: np.ndarray) -> float:
-        """
-        Calculate the reward based on the agent's position.
-
-        Args:
-            pos (numpy.ndarray): Agent's position.
-
-        Returns:
-            float: Reward value.
-        """
-        reward = float("inf")  # Initialize reward with a large positive value
-        reward_puddles = []
-        for top_left, wid in zip(self.puddle_top_left, self.puddle_width):
-            if (
-                top_left[0] <= pos[0] <= top_left[0] + wid[0]
-                and top_left[1] - wid[1] <= pos[1] <= top_left[1]
-            ):
-                # Calculate the distance from the nearest edge of the puddle to the agent
-                dist_to_edge = max(
-                    abs(pos[0] - top_left[0]),
-                    abs(top_left[0] + wid[0] - pos[0]),
-                    abs(pos[1] - top_left[1]),
-                    abs(top_left[1] - wid[1] - pos[1]),
-                )
-                reward_puddle = min(reward, -400 * dist_to_edge)
-                reward_puddles.append(reward_puddle)
-        if (
-            reward_puddles == []
-            and np.linalg.norm((pos - self.goal), ord=1) < self.goal_threshold
-        ):
-            return 0 # If the agent is in the goal, return 0
-        elif reward_puddles == []:
-            return -1 #-1 for each timestep
-        else:
-            if self.puddle_agg_func == "min":
-                return min(reward_puddles)
-            elif self.puddle_agg_func == "sum":
-                return sum(reward_puddles)
-            else:
-                raise ValueError(f"Puddle Agg Function '{self.puddle_agg_func}' is not known!")
 
 
     def reset(self, seed: int = None, options: dict = None) -> tuple[np.ndarray, dict]:
@@ -147,11 +105,9 @@ class PuddleEnv(gymnasium.Env):
         """
         self.np_random, seed = seeding.np_random(seed)
         self.num_steps = 0
-        if self.start is None:
+        if len(self.start) == 0:
             self.pos = self.observation_space.sample()
-            while (
-                np.linalg.norm((self.pos - self.goal), ord=1) < self.goal_threshold
-            ):  # make sure the start position is not too close to the goal
+            while is_done(self.pos, self.goal, self.goal_threshold):  # make sure the start position is not too close to the goal
                 self.pos = self.observation_space.sample()
         else:
             self.pos = copy.copy(self.start)
@@ -190,7 +146,7 @@ class PuddleEnv(gymnasium.Env):
             for i in range(self.window_size):
                 for j in range(self.window_size):
                     pos = np.array([i / self.window_size, 1 - j / self.window_size])
-                    reward = self._get_reward(pos)
+                    reward = get_reward(pos)
                     if reward < -1:
                         max_reward = -1
                         color = int(
@@ -203,17 +159,16 @@ class PuddleEnv(gymnasium.Env):
         # Draw the goal
         goal_pos = (
             int(self.goal[0] * self.window_size) - 10,
-            self.window_size - int(self.goal[1] * self.window_size) + 10,
+            int(self.goal[1] * self.window_size) + 10,
         )
         pygame.draw.circle(canvas, (0, 255, 0), goal_pos, 10)
-
        
 
         # Draw the puddles
         for top_left, wid in zip(self.puddle_top_left, self.puddle_width):
             puddle_pos = (
                 int(top_left[0] * self.window_size),
-                self.window_size - int(top_left[1] * self.window_size),
+                int(top_left[1] * self.window_size),
             )
             puddle_size = (
                 int(wid[0] * self.window_size),
@@ -224,7 +179,7 @@ class PuddleEnv(gymnasium.Env):
         # Draw the agent
         agent_pos = (
             int(self.pos[0] * self.window_size),
-            self.window_size - int(self.pos[1] * self.window_size),
+            int(self.pos[1] * self.window_size),
         )
         pygame.draw.circle(canvas, (255, 0, 0), agent_pos, 5)
 
@@ -256,7 +211,7 @@ class PuddleEnv(gymnasium.Env):
         for i in range(100):
             for j in range(100):
                 pos = np.array([i / 100, j / 100])
-                reward = self._get_reward(pos)
+                reward = get_reward(pos, self.goal, self.goal_threshold, self.puddle_top_left, self.puddle_width, self.puddle_agg_func)
                 if reward < min_reward:
                     min_reward = reward
 
@@ -269,3 +224,41 @@ class PuddleEnv(gymnasium.Env):
         if self.window is not None:
             pygame.display.quit()
             pygame.quit()
+
+@njit
+def get_reward(pos: np.ndarray, goal: np.ndarray, goal_threshold: np.ndarray, puddle_top_left: np.ndarray, puddle_width: np.ndarray, puddle_agg_func: str):
+    reward_puddles = np.zeros((0,), dtype=np.float64)
+    for top_left, wid in zip(puddle_top_left, puddle_width):
+        if (
+            top_left[0] <= pos[0] <= top_left[0] + wid[0]
+            and top_left[1] - wid[1] <= pos[1] <= top_left[1]
+        ):
+            # Calculate the distance from the nearest edge of the puddle to the agent
+            dist_to_edge = np.array([
+                np.abs(pos[0] - top_left[0]),
+                np.abs(top_left[0] + wid[0] - pos[0]),
+                np.abs(pos[1] - top_left[1]),
+                np.abs(top_left[1] - wid[1] - pos[1]),
+            ]).max()
+            reward_puddle = -400 * dist_to_edge
+            reward_puddles = np.append(reward_puddles, reward_puddle)
+    if len(reward_puddles) == 0 and is_done(pos, goal, goal_threshold):
+        return 0 # If the agent is in the goal, return 0
+    elif len(reward_puddles) == 0:
+        return -1 #-1 for each timestep
+    else:
+        if puddle_agg_func == "min":
+            return np.min(reward_puddles)
+        elif puddle_agg_func == "sum":
+            return np.sum(reward_puddles)
+        else:
+            raise ValueError(f"Puddle Agg Function '{puddle_agg_func}' is not known!")
+
+@njit
+def get_new_pos(pos, actions, action, noise):
+    added_noise = np.random.normal(loc=0.0, scale=noise, size=(2,))
+    return np.clip(pos + actions[action] + added_noise, 0.0, 1.0)
+
+@njit
+def is_done(pos: np.ndarray, goal: np.ndarray, goal_threshold: float) -> bool:
+    return np.linalg.norm((pos - goal), ord=1) < goal_threshold
