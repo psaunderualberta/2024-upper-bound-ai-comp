@@ -80,6 +80,7 @@ def vi_perform_update(q_table: np.ndarray, v_table: np.ndarray, puddle_top_left:
                     (ny, nx) = vi_get_position(q_table, new_pos)
                     new_val += (reward + v_table[ny, nx]) / num_iters
 
+                # TODO: Print what's happening here
                 q_table[y, x, action] = new_val
             
             # print(np.max(q_table[y, x, :]), v_table[y, x])
