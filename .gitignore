@@ -107,3 +107,6 @@ venv/
 
 # logs
 logs/
+
+wandb/
+runs/
