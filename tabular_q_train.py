@@ -60,8 +60,11 @@ def train(config: dict) -> np.ndarray:
     puddle_ids = np.array(puddle_ids)
 
     exploration_factor = 0.3
-    lr = 0.01
+    lr = 0.1
     gamma = 1.0
+
+    start_pos = map(float, config["start_pos"].split(",")) if config["start_pos"] is not None else None
+    start_pos = np.array(list(start_pos)) if start_pos is not None else None
 
     steps = []
     rewards = []
@@ -138,6 +141,7 @@ def train(config: dict) -> np.ndarray:
                 puddle_top_left,
                 puddle_width,
                 puddle_ids,
+                start_pos,
             )
             steps.append(num_steps)
             rewards.append(cum_rewards)
@@ -199,9 +203,9 @@ def evaluate(filepath, save=False):
 
                 if done:
                     print(f"total reward in this episode: {total_reward}")
-                    total_reward = 0
                     break
             df.loc[seed, f"ep_reward_pw{envno}"] = total_reward
+            print(df.loc[seed, f"ep_reward_pw{envno}"])
 
             env.close()
 
@@ -209,7 +213,7 @@ def evaluate(filepath, save=False):
     df = df.reset_index(names=["seed_ID"])
 
     if save:
-        df.to_csv(f"dp/eval.csv")
+        df.to_csv(f"dp/eval.csv", index=False)
 
     return df, frames
 
@@ -229,6 +233,7 @@ if __name__ == "__main__":
     parser.add_argument("--evaluate", action='store_true', help="Evaluate the Q table")
     parser.add_argument("--train", action='store_true', help="Train the Q table")
     parser.add_argument("--q_table_path", type=str, default=None, help="Path to the Q table to evaluate")
+    parser.add_argument("--start-pos", type=str, default=None, help="Starting position for training")
     args = parser.parse_args()
 
     if args.train:
