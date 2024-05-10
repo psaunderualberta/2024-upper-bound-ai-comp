@@ -19,40 +19,22 @@ for i in range(__NUM_ACTIONS):
 
 @njit
 def q_create_table(
-    puddle_top_left: np.ndarray,
-    puddle_width: np.ndarray,
-    puddle_agg_func: str,
-    granularity: float = 10,
+    granularity: float = 10
 ):
-    tbl = np.zeros((granularity + 1, granularity + 1, __NUM_ACTIONS), dtype=np.float64)
+    tbl = np.zeros((granularity, granularity, __NUM_ACTIONS), dtype=np.float64)
 
-    n = granularity + 1
+    n = granularity
     for i in range(n):
         for j in range(n):
+            pos = np.array([i, j], dtype=np.float64) / np.array([n, n], dtype=np.float64)
             for a in range(__NUM_ACTIONS):
-                pos = np.array([i / n, j / n])
                 new_pos = get_new_pos(pos, __ACTIONS, a, __THRUST_NOISE)
 
                 # The goal is always in the top-right, so
                 # initalize the q table using distance to the
                 # upper-left corner. 20 steps to go across whole map,
                 # so normalize according to that
-                tbl[i, j, a] = -np.linalg.norm((new_pos - __GOAL), ord=1)
-
-                # We also know the puddle positions, so incorporate that
-                # knowledge as well :)
-                reward = get_reward(
-                    new_pos,
-                    __GOAL,
-                    __GOAL_THRESHOLD,
-                    puddle_top_left,
-                    puddle_width,
-                    puddle_agg_func,
-                )
-                if reward == 0:
-                    tbl[i, j, a] = 0
-                elif reward != -1:
-                    tbl[i, j, a] += reward
+                tbl[i, j, a] = -np.linalg.norm((new_pos - __GOAL), ord=1) * 20
 
     return tbl
 
@@ -71,12 +53,14 @@ def q_rollout(
     gamma: float,
     puddle_top_left: np.ndarray,
     puddle_width: np.ndarray,
-    puddle_agg_func: str,
+    puddle_env_ids: np.ndarray
 ):
-    pos = np.random.random(2)
+    pos = np.array([0.2, 0.4])  # Same start for every environment
+    cum_reward = 0.0
 
     num_steps = 0
     while not is_done(pos, __GOAL, __GOAL_THRESHOLD):
+
         (yt, xt) = q_get_position(q_table, pos)
         if np.random.random() < exploration_factor:
             action = np.random.randint(__NUM_ACTIONS)
@@ -89,7 +73,7 @@ def q_rollout(
             __GOAL_THRESHOLD,
             puddle_top_left,
             puddle_width,
-            puddle_agg_func,
+            puddle_env_ids,
         )
 
         (ytp1, xtp1) = q_get_position(q_table, pos)
@@ -98,20 +82,35 @@ def q_rollout(
         )
 
         num_steps += 1
+        cum_reward += reward
 
-    return num_steps
+    return num_steps, cum_reward
 
 
 @njit
-def q_get_bins(q_table: np.ndarray) -> np.ndarray:
-    return np.linspace(0, 1, q_table.shape[0] - 1)
+def q_get_action(q_table: np.ndarray, pos: np.ndarray) -> int:
+    (x, y) = q_get_position(q_table, pos)
+    return np.argmax(q_table[x, y, :])
 
 
 @njit
 def q_get_position(q_table: np.ndarray, pos: np.ndarray) -> np.ndarray:
-    bins = q_get_bins(q_table)
-    return np.digitize(pos, bins) - 1
+    n = q_table.shape[0]
+    y = min(int(pos[0] * n), n - 1)
+    x = min(int(pos[1] * n), n - 1)
+    return (y, x)
 
+@njit
+def q_upscale_table(q_table: np.ndarray) -> np.ndarray:
+    (n, _, _) = q_table.shape
+    new_q_table = np.zeros((n * 2, n * 2, __NUM_ACTIONS), dtype=np.float64)
+    for i in range(n):
+        for j in range(n):
+            new_q_table[2 * i, 2 * j, :] = q_table[i, j, :]
+            new_q_table[2 * i + 1, 2 * j, :] = q_table[i, j, :]
+            new_q_table[2 * i, 2 * j + 1, :] = q_table[i, j, :]
+            new_q_table[2 * i + 1, 2 * j + 1, :] = q_table[i, j, :]
+    return new_q_table
 
 def q_save_data(q_table: np.ndarray, filepath: str) -> None:
     np.save(filepath, q_table)

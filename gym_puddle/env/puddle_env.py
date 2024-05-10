@@ -18,7 +18,6 @@ class PuddleEnv(gymnasium.Env):
         puddle_top_left: list[list[float]] = [[0, 0.85], [0.35, 0.9]],
         puddle_width: list[list[float]] = [[0.55, 0.2], [0.2, 0.6]],
         render_mode: str = "rgb_array",
-        puddle_agg_func: str = "min"
     ) -> None:
         """
         Initialize the PuddleEnv environment.
@@ -35,7 +34,6 @@ class PuddleEnv(gymnasium.Env):
 
         self.start = np.array(start)
         self.goal = np.array(goal)
-        self.puddle_agg_func = puddle_agg_func
 
         self.goal_threshold = goal_threshold
 
@@ -44,6 +42,7 @@ class PuddleEnv(gymnasium.Env):
 
         self.puddle_top_left = [np.array(top_left) for top_left in puddle_top_left]
         self.puddle_width = [np.array(width) for width in puddle_width]
+        self.puddle_ids = np.zeros(len(self.puddle_top_left), dtype=np.int32)
 
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(0.0, 1.0, shape=(2,), dtype=np.float64)
@@ -64,8 +63,6 @@ class PuddleEnv(gymnasium.Env):
         self.min_reward = self.find_min_reward()
         self.heatmap = False
 
-        
-
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
         """
         Perform a step in the environment.
@@ -77,7 +74,7 @@ class PuddleEnv(gymnasium.Env):
             tuple[np.ndarray, float, bool, bool, dict]: Tuple containing the new position, reward, done flag, trunc flag, and additional information.
         """
         self.num_steps += 1
-        trunc = False # we don't have a truncation condition for this environment
+        trunc = False  # we don't have a truncation condition for this environment
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
             type(action),
@@ -85,12 +82,18 @@ class PuddleEnv(gymnasium.Env):
 
         self.pos = get_new_pos(self.pos, self.actions, action, self.noise)
 
-        reward = get_reward(self.pos, self.goal, self.goal_threshold, self.puddle_top_left, self.puddle_width, self.puddle_agg_func)
+        reward = get_reward(
+            self.pos,
+            self.goal,
+            self.goal_threshold,
+            self.puddle_top_left,
+            self.puddle_width,
+            self.puddle_ids,
+        )
 
         done = is_done(self.pos, self.goal, self.goal_threshold)
 
         return self.pos, reward, done, trunc, {}
-
 
     def reset(self, seed: int = None, options: dict = None) -> tuple[np.ndarray, dict]:
         """
@@ -107,7 +110,9 @@ class PuddleEnv(gymnasium.Env):
         self.num_steps = 0
         if len(self.start) == 0:
             self.pos = self.observation_space.sample()
-            while is_done(self.pos, self.goal, self.goal_threshold):  # make sure the start position is not too close to the goal
+            while is_done(
+                self.pos, self.goal, self.goal_threshold
+            ):  # make sure the start position is not too close to the goal
                 self.pos = self.observation_space.sample()
         else:
             self.pos = copy.copy(self.start)
@@ -132,7 +137,7 @@ class PuddleEnv(gymnasium.Env):
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
-            #set teh window name
+            # set teh window name
             pygame.display.set_caption("Puddle World")
             self.window = pygame.display.set_mode((self.window_size, self.window_size))
         if self.clock is None and self.render_mode == "human":
@@ -146,7 +151,7 @@ class PuddleEnv(gymnasium.Env):
             for i in range(self.window_size):
                 for j in range(self.window_size):
                     pos = np.array([i / self.window_size, 1 - j / self.window_size])
-                    reward = get_reward(pos)
+                    reward = self._get_reward(pos)
                     if reward < -1:
                         max_reward = -1
                         color = int(
@@ -159,16 +164,15 @@ class PuddleEnv(gymnasium.Env):
         # Draw the goal
         goal_pos = (
             int(self.goal[0] * self.window_size) - 10,
-            int(self.goal[1] * self.window_size) + 10,
+            self.window_size - int(self.goal[1] * self.window_size) + 10,
         )
         pygame.draw.circle(canvas, (0, 255, 0), goal_pos, 10)
-       
 
         # Draw the puddles
         for top_left, wid in zip(self.puddle_top_left, self.puddle_width):
             puddle_pos = (
                 int(top_left[0] * self.window_size),
-                int(top_left[1] * self.window_size),
+                self.window_size - int(top_left[1] * self.window_size),
             )
             puddle_size = (
                 int(wid[0] * self.window_size),
@@ -179,7 +183,7 @@ class PuddleEnv(gymnasium.Env):
         # Draw the agent
         agent_pos = (
             int(self.pos[0] * self.window_size),
-            int(self.pos[1] * self.window_size),
+            self.window_size - int(self.pos[1] * self.window_size),
         )
         pygame.draw.circle(canvas, (255, 0, 0), agent_pos, 5)
 
@@ -191,7 +195,7 @@ class PuddleEnv(gymnasium.Env):
 
         else:  # rgb_array
             return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))
-        
+
     def close(self) -> None:
         """
         Close the environment.
@@ -211,7 +215,14 @@ class PuddleEnv(gymnasium.Env):
         for i in range(100):
             for j in range(100):
                 pos = np.array([i / 100, j / 100])
-                reward = get_reward(pos, self.goal, self.goal_threshold, self.puddle_top_left, self.puddle_width, self.puddle_agg_func)
+                reward = get_reward(
+                    pos,
+                    self.goal,
+                    self.goal_threshold,
+                    self.puddle_top_left,
+                    self.puddle_width,
+                    self.puddle_ids,
+                )
                 if reward < min_reward:
                     min_reward = reward
 
@@ -225,39 +236,49 @@ class PuddleEnv(gymnasium.Env):
             pygame.display.quit()
             pygame.quit()
 
+
 @njit
-def get_reward(pos: np.ndarray, goal: np.ndarray, goal_threshold: np.ndarray, puddle_top_left: np.ndarray, puddle_width: np.ndarray, puddle_agg_func: str):
-    reward_puddles = np.zeros((0,), dtype=np.float64)
-    for top_left, wid in zip(puddle_top_left, puddle_width):
+def get_reward(
+    pos: np.ndarray,
+    goal: np.ndarray,
+    goal_threshold: np.ndarray,
+    puddle_top_left: np.ndarray,
+    puddle_width: np.ndarray,
+    puddle_ids: np.ndarray,
+) -> float:
+    reward_puddles = np.zeros((np.unique(puddle_ids).size,), dtype=np.float64)
+    for top_left, wid, i in zip(puddle_top_left, puddle_width, puddle_ids):
         if (
             top_left[0] <= pos[0] <= top_left[0] + wid[0]
             and top_left[1] - wid[1] <= pos[1] <= top_left[1]
         ):
             # Calculate the distance from the nearest edge of the puddle to the agent
-            dist_to_edge = np.array([
-                np.abs(pos[0] - top_left[0]),
-                np.abs(top_left[0] + wid[0] - pos[0]),
-                np.abs(pos[1] - top_left[1]),
-                np.abs(top_left[1] - wid[1] - pos[1]),
-            ]).max()
-            reward_puddle = -400 * dist_to_edge
-            reward_puddles = np.append(reward_puddles, reward_puddle)
-    if len(reward_puddles) == 0 and is_done(pos, goal, goal_threshold):
-        return 0 # If the agent is in the goal, return 0
-    elif len(reward_puddles) == 0:
-        return -1 #-1 for each timestep
+            dist_to_edge = np.array(
+                [
+                    np.abs(pos[0] - top_left[0]),
+                    np.abs(top_left[0] + wid[0] - pos[0]),
+                    np.abs(pos[1] - top_left[1]),
+                    np.abs(top_left[1] - wid[1] - pos[1]),
+                ]
+            ).max()
+
+            reward_puddles[i] = min(reward_puddles[i], -400 * dist_to_edge)
+    
+    in_puddle = np.any(reward_puddles < 0)
+
+    if not in_puddle and is_done(pos, goal, goal_threshold):
+        return 0  # If the agent is in the goal, return 0
+    elif not in_puddle:
+        return -1  # -1 for each timestep
     else:
-        if puddle_agg_func == "min":
-            return np.min(reward_puddles)
-        elif puddle_agg_func == "sum":
-            return np.sum(reward_puddles)
-        else:
-            raise ValueError(f"Puddle Agg Function '{puddle_agg_func}' is not known!")
+        return np.mean(reward_puddles)
+
 
 @njit
 def get_new_pos(pos, actions, action, noise):
     added_noise = np.random.normal(loc=0.0, scale=noise, size=(2,))
-    return np.clip(pos + actions[action] + added_noise, 0.0, 1.0)
+    return np.clip(pos + actions[action] + added_noise, 0, 1)
+
 
 @njit
 def is_done(pos: np.ndarray, goal: np.ndarray, goal_threshold: float) -> bool:

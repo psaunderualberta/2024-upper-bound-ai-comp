@@ -1,6 +1,10 @@
+"""
+This module contains the implementation of the Value Iteration algorithm for the PuddleWorld environment.
+"""
+
 import numpy as np
 from gym_puddle.env.puddle_env import is_done, get_reward, get_new_pos
-from numba import njit
+from numba import njit, prange
 
 __NUM_ACTIONS = 4
 
@@ -16,107 +20,102 @@ __ACTIONS = np.zeros((__NUM_ACTIONS, 2))
 for i in range(__NUM_ACTIONS):
     __ACTIONS[i][i // 2] = __THRUST * (i % 2 * 2 - 1)
 
+
 @njit
 def vi_create_tables(
     puddle_top_left: np.ndarray,
     puddle_width: np.ndarray,
     puddle_agg_func: str,
     granularity: float = 10,
-) -> tuple[np.ndarray, np.ndarray]:
-    tbl = np.zeros((granularity + 1, granularity + 1, __NUM_ACTIONS), dtype=np.float64)
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    return (
+        np.zeros((granularity + 1, granularity + 1, __NUM_ACTIONS), dtype=np.float64),
+        np.zeros((granularity + 1, granularity + 1), dtype=np.float64) - 1,
+        np.zeros((granularity + 1, granularity + 1, 2), dtype=np.float64),
+    )
 
-    # Distance from upper-left corner
-    # 20 steps to go across whole map
-    n = granularity + 1
-    for i in range(n):
-        for j in range(n):
-            for a in range(__NUM_ACTIONS):
-                pos = np.array([i / n, j / n])
-                new_pos = get_new_pos(pos, __ACTIONS, a, __THRUST_NOISE)
-
-                # The goal is always in the top-right, so
-                # initalize the q table using distance to the
-                # upper-left corner. 20 steps to go across whole map,
-                # so normalize according to that
-                tbl[i, j, a] = -np.linalg.norm((new_pos - __GOAL), ord=1) * 20
-
-                # We also know the puddle positions, so incorporate that
-                # knowledge as well :)
-                reward = get_reward(
-                    new_pos,
-                    __GOAL,
-                    __GOAL_THRESHOLD,
-                    puddle_top_left,
-                    puddle_width,
-                    puddle_agg_func,
-                )
-                if reward == 0:
-                    tbl[i, j, a] = 0
-                elif reward != -1:
-                    tbl[i, j, a] += reward
-
-    return tbl
 
 @njit
-def vi_get_action(q_table: np.ndarray, pos: np.ndarray) -> int:
-    (x, y) = q_get_position(q_table, pos)
-    return np.argmax(q_table[x, y, :])
-
-@njit
-def vi_perform_update(q_table: np.ndarray, v_table: np.ndarray, puddle_top_left: np.ndarray, puddle_width: np.ndarray, puddle_agg_func: str) -> float:
+def vi_perform_update(
+    q_table: np.ndarray,
+    v_table: np.ndarray,
+    r_table: np.ndarray,
+    gamma: float,
+    puddle_top_left: np.ndarray,
+    puddle_width: np.ndarray,
+    puddle_agg_func: str,
+) -> float:
     n = q_table.shape[0]
-    num_iters = 500
+    num_iters = 1
     delta = 0
+    bin_len = 1 / n
 
-    for y in range(n):
+    for i in range(n):  # Explicitly tell Numba to parallelize this loop
+        y = n - 1 - i
         for x in range(n):
+            x = n - 1 - x
             pos = np.array([y / n, x / n])
+            pos += np.random.uniform(0, bin_len, 2)
+            pos = np.clip(pos, 1e-5, 1 - 1e-5)
+
+            if is_done(pos, __GOAL, __GOAL_THRESHOLD):
+                v_table[y, x] = 0
+                q_table[y, x, :] = 0
+                continue
+
             for action in range(__NUM_ACTIONS):
                 new_val = 0
 
                 for _ in range(num_iters):
-                    new_pos = get_new_pos(pos, __ACTIONS, action, __THRUST_NOISE)
-                    reward = get_reward(new_pos, __GOAL, __GOAL_THRESHOLD, puddle_top_left, puddle_width, puddle_agg_func)
-                    (ny, nx) = vi_get_position(q_table, new_pos)
-                    new_val += (reward + v_table[ny, nx]) / num_iters
+                    new_pos = get_new_pos(pos, __ACTIONS, action, 0)
 
-                # TODO: Print what's happening here
-                q_table[y, x, action] = new_val
-            
-            # print(np.max(q_table[y, x, :]), v_table[y, x])
+                    reward = get_reward(
+                        new_pos,
+                        __GOAL,
+                        __GOAL_THRESHOLD,
+                        puddle_top_left,
+                        puddle_width,
+                        puddle_agg_func,
+                    )
+                    (ny, nx) = vi_get_position(q_table, new_pos)
+
+                    # Running average of rewards
+                    r_table[ny, nx][1] += 1
+                    r_table[ny, nx][0] *= (r_table[ny, nx][1] - 1) / r_table[
+                        ny, nx
+                    ][1]
+                    r_table[ny, nx][0] += reward / r_table[ny, nx][1]
+
+                    new_val += r_table[ny, nx][0] + gamma * v_table[ny, nx]
+
+                q_table[y, x, action] = new_val / num_iters
+            # Update the value table, and keep track of the delta
             delta = max(delta, np.abs(np.max(q_table[y, x, :]) - v_table[y, x]))
             v_table[y, x] = np.max(q_table[y, x, :])
+
+    # Check for NaNs and Infs
+    assert np.isinf(v_table).sum() == 0 and np.isnan(v_table).sum() == 0
 
     return delta
 
 
+@njit
+def vi_get_action(q_table: np.ndarray, pos: np.ndarray) -> int:
+    (x, y) = vi_get_position(q_table, pos)
+    return np.argmax(q_table[x, y, :])
 
-
-    # while not is_done(pos, __GOAL, __GOAL_THRESHOLD):
-    #     if np.random.random() < exploration_factor:
-    #         action = np.random.randint(__NUM_ACTIONS)
-    #     else:
-    #         action = q_get_action(q_table, pos)
-    #     pos = get_new_pos(pos, __ACTIONS, action, __THRUST_NOISE)
-    #     reward = get_reward(pos, __GOAL, __GOAL_THRESHOLD, puddle_top_left, puddle_width, puddle_agg_func)
-
-    #     states = np.append(states, pos)
-    #     actions = np.append(actions, action)
-    #     rewards = np.append(rewards, reward)
-
-    return q_table, v_table
-
-@njit    
-def vi_get_bins(q_table: np.ndarray) -> np.ndarray:
-    return np.linspace(0, 1, q_table.shape[0] - 1)
 
 @njit
 def vi_get_position(q_table: np.ndarray, pos: np.ndarray) -> np.ndarray:
-    bins = vi_get_bins(q_table)
-    return np.digitize(pos, bins) - 1
+    n = q_table.shape[0] - 1
+    y = int(pos[0] * n)
+    x = int(pos[1] * n)
+    return (y, x)
+
 
 def vi_save_data(q_table: np.ndarray, filepath: str) -> None:
     np.save(filepath, q_table)
+
 
 def vi_load_data(filepath) -> np.ndarray:
     return np.load(filepath)
