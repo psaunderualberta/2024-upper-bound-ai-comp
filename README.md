@@ -1,3 +1,35 @@
+# pahasa - Submission Overview
+All additional files can be found in `gym_puddle/tabular/*`, and `tabular_*.py` in the root directory. The file containing functions to train & evaluate RL models is `tabular_q_train.py`, as `tabular_value_iteration.py` doesn't converge (or has a bug. unsure). 
+
+## Changes to the environment
+I've made several small changes to the environment to better facilitate q-learning. The primary one is changing the clipping of states from `[0, 1]` to [`0, 1 - 1e-7]`. This is to ensure any positions that get clipped are placed into the last bucket on the edge, rather than a separate bucket that only covers observations outside the map.
+
+Also, `puddle_env.py` has been subtly reworked to facilitate compilation with `numba`. This is to make learning *far* faster (in excess of 50x faster). 
+
+## Intelligent design choices
+Ideally, we learn as high-resolution q table as possible. But, learning an `800 x 800` table will take an exceedingly long time. To mitigate this, we first learn small q tables (i.e. `50 x 50`), and then *upscale* by a factor of 2 once this table converges. Hence, the `50 x 50` table becomes a `100 x 100` table. We then continue q-learning on this table until convergence, and repeat until a desired resolution is reached.
+
+Also, rather than learning on one environment at a time, we average the reward received for an observation across all 5 environments. This mitigates any stochasticity from if we sampled environments instead, and ensures we are optimizing for precisely the metric on which the agent will be evaluated. 
+
+## Virtual environment
+This project was developed using a conda environment with python version `3.10.9`, and so other python versions are untested. To create the appropriate environment setup, simply run 
+```sh
+conda create -n upper-bound-2024-comp python==3.10.9  # Hit 'y' for all prompts
+conda activate upper-bound-2024-comp
+pip install -r requirements.txt
+```
+
+
+## Train a model
+
+
+## Evaluate a model
+This repo contains several learned models, all within the `models/` directory. Each learned model's file is of the form `q_table_NxN.npy`, where `N` represents the side length of the table. Thus, each table has `N * N * 4` elements (4 for the four possible actions). 
+
+To use the model `q_table` to predict an action for observation `obs`, simply use `action = q_get_action(q_table, obs)` (where `q_get_action` is in `gym_puddle/tabular/q_learning.py`). This will be a number in `[0, 3]` which can then be passed to `env.step`. 
+
+To evaluate a learned Q-learning model, use the command `python tabular_q_train.py --model_path <path2model>`. This will evaluate the model on the predefined training set (5 maps, 100 seeds) and save the result under the `submissions/` directory. 
+
 # Reviving Puddle World - Upper Bound (2024) AI Competition
 Puddle World is an environment that got traction in the 1990s which was studied by [Boyan and Moore (1995)](https://www.ri.cmu.edu/pub_files/pub1/boyan_justin_1995_1/boyan_justin_1995_1.pdf) and then later picked up by Rich Sutton in the same year. [Rich (1995)](https://proceedings.neurips.cc/paper_files/paper/1995/hash/8f1d43620bc6bb580df6e80b0dc05c48-Abstract.html) conducted various experiments on the environment, and we use this study as a reference for our implementation of the Puddle World.
 
