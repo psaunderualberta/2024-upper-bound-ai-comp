@@ -1,6 +1,7 @@
 import numpy as np
 from gym_puddle.env.puddle_env import is_done, get_reward, get_new_pos
 from numba import njit
+import cv2
 
 __NUM_ACTIONS = 4
 
@@ -18,15 +19,15 @@ for i in range(__NUM_ACTIONS):
 
 
 @njit
-def q_create_table(
-    granularity: float = 10
-):
+def q_create_table(granularity: float = 10):
     tbl = np.zeros((granularity, granularity, __NUM_ACTIONS), dtype=np.float64)
 
     n = granularity
     for i in range(n):
         for j in range(n):
-            pos = np.array([i, j], dtype=np.float64) / np.array([n, n], dtype=np.float64)
+            pos = np.array([i, j], dtype=np.float64) / np.array(
+                [n, n], dtype=np.float64
+            )
             for a in range(__NUM_ACTIONS):
                 new_pos = get_new_pos(pos, __ACTIONS, a, __THRUST_NOISE)
 
@@ -53,9 +54,14 @@ def q_rollout(
     gamma: float,
     puddle_top_left: np.ndarray,
     puddle_width: np.ndarray,
-    puddle_env_ids: np.ndarray
+    puddle_env_ids: np.ndarray,
+    start: np.ndarray = None,
 ):
-    pos = np.array([0.2, 0.4])  # Same start for every environment
+
+    if start is None:
+        pos = np.random.uniform(0, 1, size=2)
+    else:
+        pos = start
     cum_reward = 0.0
 
     num_steps = 0
@@ -77,12 +83,20 @@ def q_rollout(
         )
 
         (ytp1, xtp1) = q_get_position(q_table, pos)
-        q_table[yt, xt, action] = (1 - lr) * q_table[yt, xt, action] + lr * (
-            reward + gamma * np.max(q_table[ytp1, xtp1, :])
-        )
+
+        if is_done(pos, __GOAL, __GOAL_THRESHOLD):
+            q_table[yt, xt, action] = (1 - lr) * q_table[yt, xt, action] + lr * reward
+        else:
+            q_table[yt, xt, action] = (1 - lr) * q_table[yt, xt, action] + lr * (
+                reward + gamma * np.max(q_table[ytp1, xtp1, :])
+            )
 
         num_steps += 1
         cum_reward += reward
+
+    # Reset the final position
+    (yt, xt) = q_get_position(q_table, pos)
+    q_table[yt, xt, :] = 0
 
     return num_steps, cum_reward
 
@@ -100,17 +114,13 @@ def q_get_position(q_table: np.ndarray, pos: np.ndarray) -> np.ndarray:
     x = min(int(pos[1] * n), n - 1)
     return (y, x)
 
-@njit
-def q_upscale_table(q_table: np.ndarray) -> np.ndarray:
-    (n, _, _) = q_table.shape
-    new_q_table = np.zeros((n * 2, n * 2, __NUM_ACTIONS), dtype=np.float64)
-    for i in range(n):
-        for j in range(n):
-            new_q_table[2 * i, 2 * j, :] = q_table[i, j, :]
-            new_q_table[2 * i + 1, 2 * j, :] = q_table[i, j, :]
-            new_q_table[2 * i, 2 * j + 1, :] = q_table[i, j, :]
-            new_q_table[2 * i + 1, 2 * j + 1, :] = q_table[i, j, :]
-    return new_q_table
+
+def q_upscale_table(q_table: np.ndarray, upscale_factor: int) -> np.ndarray:
+    n = q_table.shape[0]
+    return cv2.resize(
+        q_table, (n * upscale_factor, n * upscale_factor), interpolation=cv2.INTER_LINEAR
+    )
+
 
 def q_save_data(q_table: np.ndarray, filepath: str) -> None:
     np.save(filepath, q_table)
