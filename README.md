@@ -18,10 +18,10 @@ pip install -e .
 ```
 
 ## Train a model
-The main training script is `tabular_q_train.py`. Run `python tabular_q_train.py --help` to learn about the arguments. To train in the standard setting, just use `python tabular_q_train.py --train`. Evaluate using `python tabular_q_train.py --evaluate --q_model_path <path2model>`
+The main training script is `tabular_q_train.py`. Run `python tabular_q_train.py --help` to learn about the arguments. To train in the standard setting, just use `python tabular_q_train.py --train`. Evaluate using `python tabular_q_train.py --evaluate --q_model_path <path2model>`.
 
 ## Evaluate a model
-This repo contains several learned models, all within the `models/` directory. Each learned model's file is of the form `q_table_NxN.npy`, where `N` represents the side length of the table. Thus, each table has `N * N * 4` elements (4 for the four possible actions). The 400 by 400 table has seen the most training, though has yet to converge.
+This repo contains several learned models, all within the `models/` directory. Each learned model's file is of the form `q_table_NxN.npy`, where `N` represents the side length of the table. Thus, each table has `N * N * 4` elements (4 for the four possible actions). The 400 by 400 table has seen the most training, though has yet to converge. The 200 by 200 one seems to to best.
 
 To use the model `q_table` to predict an action for observation `obs`, simply use `action = q_get_action(q_table, obs)` (where `q_get_action` is in `gym_puddle/tabular/q_learning.py`). This will be a number in `[0, 3]` which can then be passed to `env.step`. 
 
