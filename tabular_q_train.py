@@ -291,16 +291,36 @@ if __name__ == "__main__":
         default=os.path.join("dp", "q_table"),
         help="Path to save the Q table",
     )
-    parser.add_argument("--wandb", action="store_true", help="Log to wandb")
-    parser.add_argument("--wandb-project", type=str, default="upper-bound-2024-comp")
-    parser.add_argument("--wandb-entity", type=str, default="psaunder")
-    parser.add_argument("--evaluate", action="store_true", help="Evaluate the Q table")
-    parser.add_argument("--train", action="store_true", help="Train the Q table")
+    parser.add_argument(
+        "--wandb",
+        action="store_true",
+        help="Log the run to wandb. Requires a wandb account, the wandb python package, and a login using `wandb login`.",
+    )
+    parser.add_argument(
+        "--wandb-project",
+        type=str,
+        default="upper-bound-2024-comp",
+        help="Wandb project",
+    )
+    parser.add_argument(
+        "--wandb-entity", type=str, default="psaunder", help="Wandb entity"
+    )
+    parser.add_argument(
+        "--evaluate",
+        action="store_true",
+        help="Run the script as evaluation for a Q table",
+    )
+    parser.add_argument(
+        "--train", action="store_true", help="Run the script to train the Q table"
+    )
     parser.add_argument(
         "--q_table_path", type=str, default=None, help="Path to the Q table to evaluate"
     )
     parser.add_argument(
-        "--start-pos", type=str, default=None, help="Starting position for training"
+        "--start-pos",
+        type=str,
+        default=None,
+        help="Starting position for each q-learning rollout. If not supplied, a random position is chosen for each rollout.",
     )
     args = parser.parse_args()
 
@@ -310,5 +330,5 @@ if __name__ == "__main__":
     if args.evaluate:
         assert os.path.isfile(
             args.q_table_path
-        ), f"Q Table path {args.q_table_path} does not exist"
+        ), f"Q Table path {args.q_table_path} does not exist! Please provide a valid path using the --q_table_path argument."
         evaluate(args.q_table_path, save=True)
